@@ -132,7 +132,7 @@ export default {
   data () {
     return {
       maskerElementsSize: {}, // a trigger or target
-      isEditingIncome: false,
+      isEditingIncome: true,
 
       // -- Hardcoded Data just for layout purpose:
       currency: currencies['USD'],

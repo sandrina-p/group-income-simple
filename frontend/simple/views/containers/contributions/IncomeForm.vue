@@ -65,12 +65,22 @@
           </fieldset>
         </div>
 
-        <div class="column">
-          <div class="c-graph">
-            [group income chart soon]
-          </div>
+        <div class="column is-flex c-graph">
+          <pie-chart :slices="groupPledgingSlices">
+            <i18n tag="p" class="is-uppercase has-text-grey is-size-7">Group Goal</i18n>
+            <span class="has-text-weight-bold">[$500]</span>
+          </pie-chart>
+          <graph-legend-group class="columns c-graphLegend">
+            <graph-legend-item
+              v-for="item in groupPledgingLegend"
+              class="column is-half c-graphLegendItem"
+              :label="item.label"
+              :color="item.color"
+            >
+              {{item.value}}
+            </graph-legend-item>
+          </graph-legend-group>
         </div>
-
       </div>
 
       <div class="field is-grouped">
@@ -94,17 +104,18 @@
 }
 
 .c-graph {
-  display: flex;
   justify-content: center;
   align-items: center;
-  width: 10rem;
-  height: 10rem;
-  background: $grey-lighter;
-  border-radius: 50%;
-  margin: auto;
-  margin-bottom: $gi-spacer-lg;
-  text-align: center;
-  padding: $gi-spacer;
+  flex-direction: column;
+  padding-left: $gi-spacer-lg;
+
+  &Legend {
+    margin-top: $gi-spacer-xs;
+
+    &Item {
+      padding-bottom: 0;
+    }
+  }
 }
 
 </style>
@@ -115,6 +126,7 @@ import PaymentMethods from './PaymentMethods.vue'
 import TextWho from '../../components/TextWho.vue'
 import { validationMixin } from 'vuelidate'
 import { requiredIf, required, minValue } from 'vuelidate/lib/validators'
+import { PieChart, GraphLegendGroup, GraphLegendItem } from '../../components/Graphs/index.js'
 
 export default {
   name: 'IncomeForm',
@@ -123,7 +135,10 @@ export default {
     Modal,
     FieldInput,
     PaymentMethods,
-    TextWho
+    TextWho,
+    PieChart,
+    GraphLegendGroup,
+    GraphLegendItem
   },
   props: {
     isEditing: Boolean,
@@ -155,6 +170,66 @@ export default {
     },
     groupCurrency () {
       return '$ USD'
+    },
+    groupPledgingSlices () {
+      const slices = [
+        {
+          percent: 0.3, // hardcoded - group pledged so far.
+          color: 'primary-light'
+        }
+      ]
+
+      if (this.$v.form.pledge.$model) {
+        slices.push({
+          percent: this.$v.form.pledge.$model * 1 / 500,
+          color: 'primary-light'
+        })
+      }
+
+      return slices
+    },
+    groupPledgingLegend () {
+      const legend = [
+        {
+          label: this.L('Members Pledging'),
+          value: this.L('{n} of {total}', { n: this.$v.form.pledge.$model ? 4 : 3, total: 7 })
+        },
+        {
+          label: this.L('Average Pledged'),
+          value: `$ ${166 + (this.$v.form.pledge.$model || 0) / (this.$v.form.pledge.$model ? 4 : 3)}`
+        },
+        {
+          label: this.L('Total Pledged'),
+          value: `$ ${166 + (1 * (this.$v.form.pledge.$model || 0))}`,
+          color: 'primary-light'
+        }
+      ]
+
+      const neededPledge = true
+
+      if (neededPledge) {
+        legend.push({
+          label: this.L('Needed Pledges'),
+          value: `$ ${500 - (166 + (1 * (this.$v.form.pledge.$model || 0)))}`,
+          color: 'light'
+        })
+      } else if (this.extraPledged) {
+        legend.push({
+          legend: this.L('Surplus (not needed)'),
+          value: '$50',
+          color: 'success'
+        })
+      }
+
+      if (this.hasLessIncome) {
+        legend.push({
+          label: this.L('Pledge to receive'),
+          value: '$50',
+          color: 'secondary'
+        })
+      }
+
+      return legend
     },
     saveButtonText () {
       const verb = this.isFirstTime ? 'Add' : 'Save'
